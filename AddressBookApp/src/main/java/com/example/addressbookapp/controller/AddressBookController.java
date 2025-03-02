@@ -1,67 +1,53 @@
 package com.example.addressbookapp.controller;
 
 import com.example.addressbookapp.dto.AddressBookEntryDTO;
-import com.example.addressbookapp.model.AddressBookEntry;
+import com.example.addressbookapp.service.AddressBookService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/addressbook")
+@RequestMapping("/contacts")
 public class AddressBookController {
 
-    private List<AddressBookEntry> contacts = new ArrayList<>();
+    @Autowired
+    private AddressBookService addressBookService;
 
     // GET all contacts
     @GetMapping
     public ResponseEntity<List<AddressBookEntryDTO>> getAllContacts() {
-        List<AddressBookEntryDTO> contactDTOs = contacts.stream()
-                .map(contact -> new AddressBookEntryDTO(contact.getName(), contact.getPhone()))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(contactDTOs);
+        List<AddressBookEntryDTO> contacts = addressBookService.getAllContacts();
+        return ResponseEntity.ok(contacts);
     }
 
     // GET contact by ID
     @GetMapping("/{id}")
     public ResponseEntity<AddressBookEntryDTO> getContactById(@PathVariable int id) {
-        if (id >= 0 && id < contacts.size()) {
-            AddressBookEntry contact = contacts.get(id);
-            return ResponseEntity.ok(new AddressBookEntryDTO(contact.getName(), contact.getPhone()));
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        AddressBookEntryDTO contact = addressBookService.getContactById(id);
+        return contact != null ? ResponseEntity.ok(contact) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
     // POST create a new contact
     @PostMapping
     public ResponseEntity<String> createContact(@RequestBody AddressBookEntryDTO contactDTO) {
-        AddressBookEntry newContact = new AddressBookEntry(contactDTO.getName(), contactDTO.getPhone());
-        contacts.add(newContact);
+        addressBookService.createContact(contactDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body("Contact added successfully");
     }
 
     // PUT update contact by ID
     @PutMapping("/{id}")
     public ResponseEntity<String> updateContact(@PathVariable int id, @RequestBody AddressBookEntryDTO updatedContactDTO) {
-        if (id >= 0 && id < contacts.size()) {
-            AddressBookEntry contact = contacts.get(id);
-            contact.setName(updatedContactDTO.getName());
-            contact.setPhone(updatedContactDTO.getPhone());
-            return ResponseEntity.ok("Contact updated successfully");
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contact not found");
+        boolean updated = addressBookService.updateContact(id, updatedContactDTO);
+        return updated ? ResponseEntity.ok("Contact updated successfully") : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contact not found");
     }
 
     // DELETE contact by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteContact(@PathVariable int id) {
-        if (id >= 0 && id < contacts.size()) {
-            contacts.remove(id);
-            return ResponseEntity.ok("Contact deleted successfully");
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contact not found");
+        boolean deleted = addressBookService.deleteContact(id);
+        return deleted ? ResponseEntity.ok("Contact deleted successfully") : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contact not found");
     }
 }
